@@ -1,3 +1,4 @@
+import { clearTimeout, setTimeout } from 'timers';
 import * as React from 'react';
 import { render } from 'react-dom';
 
@@ -72,22 +73,36 @@ class ContextMenu extends React.Component<IContextMenuProps, IContextMenuState> 
      * @param callbackOrData
      */
     public static proxy(callbackOrData: ContextMenuData | ((cb: MouseEvent | React.MouseEvent<HTMLElement>) => Promise<ContextMenuData>)) {
-        return async function capture(ev: MouseEvent | React.MouseEvent<HTMLElement>, ...args) {
-            ev.preventDefault();
-            const pos = {
-                x: ev.clientX,
-                y: ev.clientY,
+        let cachedFn = ContextMenu.proxyCache.get(callbackOrData);
+        console.log('nice');
+        if (!cachedFn) {
+            console.log('creating cache');
+            cachedFn = {
+                cachePurgeTimer: 0,
+                fn: async function capture(ev: MouseEvent | React.MouseEvent<HTMLElement>, ...args) {
+                    ev.preventDefault();
+                    const pos = {
+                        x: ev.clientX,
+                        y: ev.clientY,
+                    };
+
+                    if (typeof callbackOrData === 'function') {
+                        callbackOrData = await callbackOrData(ev, ...args);
+                    }
+                    singleton.showMenu(callbackOrData, {
+                        pos,
+                    });
+
+                },
             };
-
-            if (typeof callbackOrData === 'function') {
-                callbackOrData = await callbackOrData(ev, ...args);
-            }
-            singleton.showMenu(callbackOrData, {
-                pos,
-            });
-
-        };
+            ContextMenu.proxyCache.set(callbackOrData, cachedFn);
+        }
+        clearTimeout(cachedFn.cachePurgeTimer);
+        cachedFn.cachePurgeTimer = setTimeout(() => ContextMenu.proxyCache.delete(callbackOrData), 60 * 1000);
+        return cachedFn.fn;
     }
+
+    private static proxyCache: Map<any, any> = new Map();
 
     private activeVirtualEventTarget: Element;
     private isOpen: boolean;
