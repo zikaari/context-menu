@@ -3,17 +3,17 @@
   border-radius: 4px;
   min-width: 130px;
   font-size: 15px; }
-  .context-menu.dark {
+  .context-menu.dark.root, .context-menu.dark.submenu {
     background: #1d1d1d;
     color: #969696;
     box-shadow: 2px 3px 8px black; }
-    .context-menu.dark button:hover {
+    .context-menu.dark.root button:hover, .context-menu.dark.submenu button:hover {
       background-color: #2f2f2f; }
-  .context-menu.light {
+  .context-menu.light.root, .context-menu.light.submenu {
     background: #ffffff;
     color: #4e4e4e;
     box-shadow: 2px 3px 6px #545454; }
-    .context-menu.light button:hover {
+    .context-menu.light.root button:hover, .context-menu.light.submenu button:hover {
       background-color: #efefef; }
   .context-menu ul {
     list-style: none;

@@ -77,10 +77,10 @@ class ContextMenu extends React.Component<IContextMenuProps, IContextMenuState> 
     private activeVirtualEventTarget: Element;
     private isOpen: boolean;
     // private emitter: EventEmitter;
-    private clickMask: HTMLDivElement;
     private rootContextMenu: HTMLDivElement;
     private pos: IPosition;
     private visible: boolean;
+    private isLastMousedownInternal: boolean;
     constructor(props) {
         super(props);
         ensureSingeleton();
@@ -97,24 +97,11 @@ class ContextMenu extends React.Component<IContextMenuProps, IContextMenuState> 
     }
 
     public render() {
-        const { data } = this.state;
-        const menu = this.renderMenu(data);
-
-        return (
-            <div
-                ref={(r) => this.clickMask = r}
-                onMouseDown={this.handleMaskMouseDown.bind(this)}
-                onMouseUp={this.handleMaskMouseUp.bind(this)}
-                style={{ height: '100vh', width: '100vw', position: 'absolute', left: '0', top: '0' }}
-            >
-                {menu}
-            </div >
-        );
+        return this.renderMenu(this.visible ? this.state.data : []);
     }
 
     public componentDidMount() {
         singleton = this;
-        this.clickMask.style.display = 'none';
     }
 
     public componentWillUnmount() {
@@ -124,9 +111,16 @@ class ContextMenu extends React.Component<IContextMenuProps, IContextMenuState> 
 
     public componentDidUpdate() {
         if (this.visible) {
-            this.clickMask.style.display = 'block';
+            this.adjustContextMenuClippingAndShow();
+            const hideCb = () => {
+                if (!this.isLastMousedownInternal) {
+                    this.hideContextMenu();
+                    window.removeEventListener('mousedown', hideCb);
+                }
+                this.isLastMousedownInternal = false;
+            };
+            window.addEventListener('mousedown', hideCb);
         }
-        this.adjustContextMenuClippingAndShow();
     }
 
     private async showMenu(data: ContextMenuData | Promise<ContextMenuData>, options) {
@@ -154,7 +148,7 @@ class ContextMenu extends React.Component<IContextMenuProps, IContextMenuState> 
         const menu = [];
         data.forEach((menuGroup, i) => {
             if (!menuGroup) { return; }
-            let groupHash: string;
+            let groupHash = ``;
             const items = menuGroup.map((item) => {
                 if (!item) { return; }
                 groupHash += item.label;
@@ -194,50 +188,25 @@ class ContextMenu extends React.Component<IContextMenuProps, IContextMenuState> 
                 </ul>,
             );
         });
-        return (
-            <div className={`context-menu ${submenu ? 'submenu' : ''} ${this.props.theme || 'light'}`} style={{ position: 'absolute', display: 'none' }}>
+        return submenu ?
+            <div
+                className={`context-menu submenu`}
+                style={{ position: 'absolute', display: 'none' }}
+            >
                 {menu}
-            </div>
-        );
-    }
-
-    private handleMaskMouseUp(ev: React.MouseEvent<HTMLDivElement>) {
-        const el = document.elementFromPoint(ev.pageX, ev.pageY);
-
-    }
-
-    private async handleMaskMouseDown(ev: React.MouseEvent<HTMLDivElement> | MouseEvent) {
-        // Although render has this implemented but we can't wait for React's defered batching
-        if (ev.currentTarget === ev.target) {
-            this.visible = false;
-            this.clickMask.style.display = 'none';
-            const el = document.elementFromPoint(ev.pageX, ev.pageY);
-            this.hideContextMenu();
-            this.activeVirtualEventTarget = el;
-            const virtualMouseDown = this.mouseEventFromMouseEvent(ev, 'mousedown');
-            // next tick
-            await delay(0);
-            el.dispatchEvent(virtualMouseDown);
-            el.addEventListener('mouseup', this.virtualizeElementClick);
-            el.addEventListener('mousedown', this.cancelElementVirtualClick);
-        }
-    }
-
-    private cancelElementVirtualClick = async (e) => {
-        this.activeVirtualEventTarget.removeEventListener('mouseup', this.virtualizeElementClick);
-        this.activeVirtualEventTarget.removeEventListener('mousedown', this.cancelElementVirtualClick);
-    }
-
-    private virtualizeElementClick = async (e) => {
-        const virtualClickEvent = this.mouseEventFromMouseEvent(e, 'click');
-        await delay(0);
-        this.activeVirtualEventTarget.dispatchEvent(virtualClickEvent);
-        this.activeVirtualEventTarget.removeEventListener('mouseup', this.virtualizeElementClick);
-        this.activeVirtualEventTarget.removeEventListener('mousedown', this.cancelElementVirtualClick);
+            </div> :
+            <div
+                onMouseDown={() => this.isLastMousedownInternal = true}
+                ref={(r) => this.rootContextMenu = r}
+                className={`context-menu root ${this.props.theme || 'light'}`}
+                style={{ position: 'absolute', display: 'none' }}
+            >
+                {menu}
+            </div>;
     }
 
     private adjustContextMenuClippingAndShow() {
-        const rootMenu = this.clickMask.firstElementChild as HTMLDivElement;
+        const rootMenu = this.rootContextMenu;
         rootMenu.style.visibility = 'hidden';
         rootMenu.style.display = 'block';
 
@@ -256,8 +225,8 @@ class ContextMenu extends React.Component<IContextMenuProps, IContextMenuState> 
 
     private hideContextMenu() {
         this.visible = false;
-        this.hideSubMenus(this.clickMask.querySelector('context-menu') as HTMLDivElement);
-        this.clickMask.style.display = 'none';
+        this.rootContextMenu.style.display = 'none';
+        this.hideSubMenus(this.rootContextMenu);
     }
 
     private showSubMenu = (ev: React.MouseEvent<HTMLButtonElement>) => {
@@ -266,9 +235,9 @@ class ContextMenu extends React.Component<IContextMenuProps, IContextMenuState> 
         if (li.classList.contains('active')) {
             return;
         }
-        li.classList.add('active');
         const ulNode = li.parentElement as HTMLUListElement;
         this.hideSubMenus(ulNode.parentElement as HTMLDivElement);
+        li.classList.add('active');
         const submenuNode = li.querySelector('div.submenu') as HTMLDivElement;
         const parentMenuBox = ulNode.getBoundingClientRect();
         // submenuNode.style.visibility = 'hidden';
