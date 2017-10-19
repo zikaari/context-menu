@@ -1,0 +1,49 @@
+@charset "UTF-8";
+.context-menu {
+  border-radius: 4px;
+  min-width: 130px;
+  font-size: 15px; }
+  .context-menu.dark {
+    background: #1d1d1d;
+    color: #969696;
+    box-shadow: 2px 3px 8px black; }
+    .context-menu.dark button:hover {
+      background-color: #2f2f2f; }
+  .context-menu.light {
+    background: #ffffff;
+    color: #4e4e4e;
+    box-shadow: 2px 3px 6px #545454; }
+    .context-menu.light button:hover {
+      background-color: #efefef; }
+  .context-menu ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    padding: 4px 0;
+    border-top: 1px solid #eaeaea; }
+    .context-menu ul:first-child {
+      border-top: 0; }
+  .context-menu button {
+    background: none;
+    border: none;
+    padding: 3px 2px 3px 7px;
+    width: 100%;
+    color: inherit;
+    display: flex;
+    align-items: center;
+    font-size: inherit;
+    outline: none; }
+    .context-menu button span.label {
+      flex-grow: 1;
+      text-align: left; }
+    .context-menu button span.label.sublabel {
+      font-size: 70%;
+      opacity: 0.8; }
+    .context-menu button i.submenu-expand {
+      display: inline-block;
+      font: normal normal normal 14px/1 sans-serif;
+      font-size: inherit;
+      text-rendering: auto;
+      -webkit-font-smoothing: antialiased; }
+      .context-menu button i.submenu-expand:after {
+        content: '⏵'; }
