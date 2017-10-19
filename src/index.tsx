@@ -80,6 +80,10 @@ class ContextMenu extends React.Component<IContextMenuProps, IContextMenuState> 
             cachedFn = {
                 cachePurgeTimer: 0,
                 fn: async function capture(ev: MouseEvent | React.MouseEvent<HTMLElement>, ...args) {
+                    if (singleton === null) {
+                        throw new Error('ContextMenu has not been initialized');
+                    }
+
                     ev.preventDefault();
                     const pos = {
                         x: ev.clientX,
@@ -157,10 +161,6 @@ class ContextMenu extends React.Component<IContextMenuProps, IContextMenuState> 
     }
 
     private async showMenu(data: ContextMenuData | Promise<ContextMenuData>, options) {
-        if (singleton === null) {
-            throw new Error('ContextMenu has not been initialized');
-        }
-
         if (data instanceof Promise) {
             data = await data;
         }
