@@ -1,22 +1,29 @@
 {
   "name": "context-menu",
   "version": "1.0.0",
-  "description": "",
+  "description": "Custom context menu you were waiting for...",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chipto/context-menu.git"
+  },
   "main": "lib/",
+  "typings": "lib/",
   "dependencies": {
     "react": "^16.0.0",
     "react-dom": "^16.0.0"
   },
   "devDependencies": {
-    "@types/node": "^8.0.34",
     "@types/react": "^16.0.10",
     "@types/react-dom": "^16.0.1",
+    "node-sass": "^4.5.3",
     "typescript": "^2.5.3"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "npm run tsc && npm run sass",
+    "tsc": "tsc",
+    "sass": "node-sass --output-style pretty  src/styles.sass > lib/styles.css"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC"
+  "keywords": ["right", "click", "custom", "context", "menu", "react"],
+  "author": "Neek Sandhu <neek.sandhu@chipto.io>",
+  "license": "MIT"
 }

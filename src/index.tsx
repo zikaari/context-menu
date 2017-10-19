@@ -1,30 +1,27 @@
-// import { EventEmitter } from 'events';
 import * as React from 'react';
 import { render } from 'react-dom';
 
-const delay = (ms) => new Promise((res) => setTimeout(res, ms));
-
-interface IMenuItem {
+export interface IMenuItem {
     label: string;
     disabled: boolean;
 }
 
-interface ITextMenuItem extends IMenuItem {
+export interface ITextMenuItem extends IMenuItem {
     sublabel?: string;
     onClick: () => void | false;
 }
 
-interface ISubMenuItem extends IMenuItem {
+export interface ISubMenuItem extends IMenuItem {
     submenu: ContextMenuData;
 }
 
-type MenuItemGroup = Array<ITextMenuItem | ISubMenuItem>;
+export type MenuItemGroup = Array<ITextMenuItem | ISubMenuItem>;
 
-type ContextMenuData = MenuItemGroup[];
+export type ContextMenuData = MenuItemGroup[];
 
 let singleton: ContextMenu = null;
 
-interface IContextMenuProps {
+export interface IContextMenuProps {
     /** built-in: 'dark' | 'light', default: 'light'.
      * Define a custom theme in your CSS like:
      * .context-menu.solaris {
@@ -35,16 +32,21 @@ interface IContextMenuProps {
     theme?: string;
 }
 
-interface IContextMenuState {
+export interface IContextMenuState {
     data: ContextMenuData;
 }
 
-interface IPosition {
+export interface IPosition {
     x: number;
     y: number;
 }
 
 class ContextMenu extends React.Component<IContextMenuProps, IContextMenuState> {
+    /**
+     * Instead of using it manually inside render function of your app. Use this to directly initialize ContextMenu service.
+     * @param container
+     * @param options
+     */
     public static init(container: HTMLElement, options: IContextMenuProps = {}) {
         ensureSingeleton();
         const ns = document.createElement('div');
@@ -52,11 +54,24 @@ class ContextMenu extends React.Component<IContextMenuProps, IContextMenuState> 
         render(<ContextMenu {...options} />, ns);
     }
 
-    public static showMenu(data: ContextMenuData | Promise<ContextMenuData>, options) {
+    /**
+     * Once initialized either as `Component` or ContextMenu.init(...). Context menu can be shown using this method.
+     * If you are going to wire it up with 'context-menu' event, use ContextMenu.proxy instead.
+     * Example: ContextMenu.showMenu([[{label: 'Copy', onClick() {...}}, ...]], {pos: {x: 345, y:782}})
+     * @param data
+     * @param options
+     */
+    public static showMenu(data: ContextMenuData | Promise<ContextMenuData>, options: { pos: IPosition }) {
         return singleton.showMenu(data, options);
     }
 
-    public static takeOver(data: ContextMenuData | ((cb: MouseEvent | React.MouseEvent<HTMLElement>) => Promise<ContextMenuData>)) {
+    /**
+     * Easiest way to wire up ContextMenu with browser's 'context-menu' event to show custom context menu.
+     * Example: window.addEventListener('context-menu', ContextMenu.proxy(this.myCtxMenuHandler.bind(this)))
+     * You only provide data, rest is taken care of (including positioning, clipping) automatically.
+     * @param callbackOrData
+     */
+    public static proxy(callbackOrData: ContextMenuData | ((cb: MouseEvent | React.MouseEvent<HTMLElement>) => Promise<ContextMenuData>)) {
         return async function capture(ev: MouseEvent | React.MouseEvent<HTMLElement>, ...args) {
             ev.preventDefault();
             const pos = {
@@ -64,10 +79,10 @@ class ContextMenu extends React.Component<IContextMenuProps, IContextMenuState> 
                 y: ev.clientY,
             };
 
-            if (typeof data === 'function') {
-                data = await data(ev, ...args);
+            if (typeof callbackOrData === 'function') {
+                callbackOrData = await callbackOrData(ev, ...args);
             }
-            singleton.showMenu(data, {
+            singleton.showMenu(callbackOrData, {
                 pos,
             });
 
@@ -115,9 +130,12 @@ class ContextMenu extends React.Component<IContextMenuProps, IContextMenuState> 
             const hideCb = () => {
                 if (!this.isLastMousedownInternal) {
                     this.hideContextMenu();
+                }
+                // reset
+                this.isLastMousedownInternal = false;
+                if (!this.visible) {
                     window.removeEventListener('mousedown', hideCb);
                 }
-                this.isLastMousedownInternal = false;
             };
             window.addEventListener('mousedown', hideCb);
         }
@@ -154,8 +172,7 @@ class ContextMenu extends React.Component<IContextMenuProps, IContextMenuState> 
                 groupHash += item.label;
                 if ((item as ITextMenuItem).onClick) {
                     const onClick = (e) => {
-                        e.stopPropagation();
-                        const shouldHide = !!(item as ITextMenuItem).onClick();
+                        const shouldHide = (item as ITextMenuItem).onClick() !== false;
                         if (shouldHide) {
                             this.hideContextMenu();
                         }
@@ -172,7 +189,7 @@ class ContextMenu extends React.Component<IContextMenuProps, IContextMenuState> 
 
                 if ((item as ISubMenuItem).submenu) {
                     return (
-                        <li key={item.label} className={`menu-item submenu ${item.disabled ? 'disabled' : ''}`}>
+                        <li key={item.label} className={`menu-item submenu-item ${item.disabled ? 'disabled' : ''}`}>
                             {this.renderMenu((item as ISubMenuItem).submenu, true)}
                             <button onMouseEnter={this.showSubMenu}>
                                 <span className='label'>{item.label}</span>
@@ -198,7 +215,7 @@ class ContextMenu extends React.Component<IContextMenuProps, IContextMenuState> 
             <div
                 onMouseDown={() => this.isLastMousedownInternal = true}
                 ref={(r) => this.rootContextMenu = r}
-                className={`context-menu root ${this.props.theme || 'light'}`}
+                className={`context-menu ${this.props.theme || 'light'}`}
                 style={{ position: 'absolute', display: 'none' }}
             >
                 {menu}
@@ -245,12 +262,11 @@ class ContextMenu extends React.Component<IContextMenuProps, IContextMenuState> 
         submenuNode.style.left = `${parentMenuBox.width}px`;
         // debugger;
         const submenuBox = submenuNode.getBoundingClientRect();
-        let { left, top } = submenuBox;
+        const { left, top } = submenuBox;
         if (top + submenuBox.height > window.innerHeight) {
-            top -= submenuBox.height;
+            submenuNode.style.marginTop = `${window.innerHeight - (top + submenuBox.height)}px`;
         }
         if (left + submenuBox.width > window.innerWidth) {
-            left = parentMenuBox.left - submenuBox.width;
             submenuNode.style.left = `${-parentMenuBox.width}px`;
         }
         // submenuNode.style.top = `${top}px`;
@@ -268,27 +284,11 @@ class ContextMenu extends React.Component<IContextMenuProps, IContextMenuState> 
         if (!level) {
             return;
         }
-        level.querySelectorAll('li.submenu.active').forEach((el) => {
+        level.querySelectorAll('li.submenu-item.active').forEach((el) => {
             el.classList.remove('active');
             const submenuNode = el.querySelector('div.submenu') as HTMLDivElement;
             submenuNode.style.display = 'none';
         });
-    }
-
-    private mouseEventFromMouseEvent(ev: React.MouseEvent<HTMLElement> | MouseEvent, newEventType: string) {
-        return new MouseEvent(newEventType, {
-            ctrlKey: ev.ctrlKey,
-            altKey: ev.altKey,
-            shiftKey: ev.shiftKey,
-            metaKey: ev.metaKey,
-            clientX: ev.clientX,
-            clientY: ev.clientY,
-            screenX: ev.screenX,
-            screenY: ev.screenY,
-            which: ((ev as React.MouseEvent<any>).nativeEvent as any || ev).which,
-            bubbles: true,
-            type: 'mousedown',
-        } as any);
     }
 
     private validateData(data: ContextMenuData, parentItemDebugInfo = '') {
@@ -330,4 +330,5 @@ function ensureSingeleton() {
         throw new Error('Only one instance of ContextMenu can be active at a time');
     }
 }
+
 export default ContextMenu;

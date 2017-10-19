@@ -4,9 +4,12 @@
         "target": "es6",
         "outDir": "./lib",
         "jsx": "react",
-        "sourceMap": true
+        "sourceMap": true,
+        "declaration": true,
+        "declarationDir": "./lib"
     },
     "exclude": [
-        "node_modules"
+        "node_modules",
+        "lib"
     ]
 }
