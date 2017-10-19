@@ -68,7 +68,7 @@ class ContextMenu extends React.Component<IContextMenuProps, IContextMenuState> 
 
     /**
      * Easiest way to wire up ContextMenu with browser's 'context-menu' event to show custom context menu.
-     * Example: window.addEventListener('context-menu', ContextMenu.proxy(this.myCtxMenuHandler.bind(this)))
+     * Example: window.addEventListener('context-menu', ContextMenu.proxy(this.getContextMenu))
      * You only provide data, rest is taken care of (including positioning, clipping) automatically.
      * @param callbackOrData
      */
