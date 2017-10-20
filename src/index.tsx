@@ -1,4 +1,3 @@
-import { clearTimeout, setTimeout } from 'timers';
 import * as React from 'react';
 import { render } from 'react-dom';
 
@@ -73,42 +72,26 @@ class ContextMenu extends React.Component<IContextMenuProps, IContextMenuState> 
      * @param callbackOrData
      */
     public static proxy(callbackOrData: ContextMenuData | ((cb: MouseEvent | React.MouseEvent<HTMLElement>) => Promise<ContextMenuData>)) {
-        let cachedFn = ContextMenu.proxyCache.get(callbackOrData);
-        console.log('nice');
-        if (!cachedFn) {
-            console.log('creating cache');
-            cachedFn = {
-                cachePurgeTimer: 0,
-                fn: async function capture(ev: MouseEvent | React.MouseEvent<HTMLElement>, ...args) {
-                    if (singleton === null) {
-                        throw new Error('ContextMenu has not been initialized');
-                    }
+        return async function capture(ev: MouseEvent | React.MouseEvent<HTMLElement>, ...args) {
+            if (singleton === null) {
+                throw new Error('ContextMenu has not been initialized');
+            }
 
-                    ev.preventDefault();
-                    const pos = {
-                        x: ev.clientX,
-                        y: ev.clientY,
-                    };
-
-                    if (typeof callbackOrData === 'function') {
-                        callbackOrData = await callbackOrData(ev, ...args);
-                    }
-                    singleton.showMenu(callbackOrData, {
-                        pos,
-                    });
-
-                },
+            ev.preventDefault();
+            const pos = {
+                x: ev.clientX,
+                y: ev.clientY,
             };
-            ContextMenu.proxyCache.set(callbackOrData, cachedFn);
-        }
-        clearTimeout(cachedFn.cachePurgeTimer);
-        cachedFn.cachePurgeTimer = setTimeout(() => ContextMenu.proxyCache.delete(callbackOrData), 60 * 1000);
-        return cachedFn.fn;
+
+            if (typeof callbackOrData === 'function') {
+                callbackOrData = await callbackOrData(ev, ...args);
+            }
+            singleton.showMenu(callbackOrData, {
+                pos,
+            });
+        };
     }
 
-    private static proxyCache: Map<any, any> = new Map();
-
-    private activeVirtualEventTarget: Element;
     private isOpen: boolean;
     // private emitter: EventEmitter;
     private rootContextMenu: HTMLDivElement;
@@ -187,14 +170,16 @@ class ContextMenu extends React.Component<IContextMenuProps, IContextMenuState> 
                 groupHash += item.label;
                 if ((item as ITextMenuItem).onClick) {
                     const onClick = (e) => {
-                        const shouldHide = (item as ITextMenuItem).onClick() !== false;
-                        if (shouldHide) {
-                            this.hideContextMenu();
+                        if (!item.disabled) {
+                            const shouldHide = (item as ITextMenuItem).onClick() !== false;
+                            if (shouldHide) {
+                                this.hideContextMenu();
+                            }
                         }
                     };
                     return (
                         <li key={item.label} className={`menu-item ${item.disabled ? 'disabled' : ''}`}>
-                            <button onClick={onClick} disabled={!!item.disabled} onMouseEnter={this.hideSubMenu}>
+                            <button onClick={onClick} onMouseEnter={this.hideSubMenu}>
                                 <span className={'label'}>{item.label}</span>
                                 <span className={'label sublabel'}>{(item as ITextMenuItem).sublabel || ''}</span>
                             </button>
@@ -206,6 +191,7 @@ class ContextMenu extends React.Component<IContextMenuProps, IContextMenuState> 
                     return (
                         <li key={item.label} className={`menu-item submenu-item ${item.disabled ? 'disabled' : ''}`}>
                             {this.renderMenu((item as ISubMenuItem).submenu, true)}
+                            {/* optimally button should have disabled attribute, but onMouseEnter is broken in React atm https://github.com/facebook/react/issues/10109 */}
                             <button onMouseEnter={this.showSubMenu}>
                                 <span className='label'>{item.label}</span>
                                 <i className='submenu-expand'></i>
@@ -262,12 +248,17 @@ class ContextMenu extends React.Component<IContextMenuProps, IContextMenuState> 
     }
 
     private showSubMenu = (ev: React.MouseEvent<HTMLButtonElement>) => {
+        console.log('show called', ev.currentTarget);
         const button = ev.currentTarget;
         const li = button.parentElement;
+        const ulNode = li.parentElement as HTMLUListElement;
+        if (li.classList.contains('disabled')) {
+            this.hideSubMenus(ulNode.parentElement as HTMLDivElement);
+            return;
+        }
         if (li.classList.contains('active')) {
             return;
         }
-        const ulNode = li.parentElement as HTMLUListElement;
         this.hideSubMenus(ulNode.parentElement as HTMLDivElement);
         li.classList.add('active');
         const submenuNode = li.querySelector('div.submenu') as HTMLDivElement;
@@ -289,6 +280,7 @@ class ContextMenu extends React.Component<IContextMenuProps, IContextMenuState> 
     }
 
     private hideSubMenu = (ev: React.MouseEvent<HTMLButtonElement>) => {
+        console.log('hide called', ev.currentTarget);
         const button = ev.currentTarget;
         const liNode = button.parentElement;
         const ctxMenuParent = (liNode.parentElement as HTMLUListElement).parentElement as HTMLDivElement;
