@@ -3,30 +3,39 @@
     min-width: 130px
     font-size: 15px
     &.dark
+        // Applies to root context menu and submenus
         , .submenu
             background: #1d1d1d
             color: #969696
             box-shadow: 2px 3px 8px black
-            button:hover
-                background-color: #2f2f2f
+        li:not(.disabled) button:hover
+            background-color: #2f2f2f
+        ul
+            border-top: 1px solid #676767
     &.light
+        // Applies to root context menu and submenus
         , .submenu
             background: #ffffff;
             color: #4e4e4e
             box-shadow: 2px 3px 6px #545454
-            button:hover
-                background-color: #efefef
+        li:not(.disabled) button:hover
+            background-color: #efefef
+        ul
+            border-top: 1px solid #eaeaea
+
     ul    
         list-style: none
         padding: 0
         margin: 0
         padding: 4px 0
-        border-top: 1px solid #eaeaea
         &:first-child
             border-top: 0
+    li.disabled
+        opacity: .5
     button 
         background: none
         border: none
+        border-radius: 0
         padding: 3px 2px 3px 7px
         width: 100%
         color: inherit
