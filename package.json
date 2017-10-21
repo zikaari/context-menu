@@ -1,7 +1,7 @@
 {
   "name": "context-menu",
   "version": "1.0.0",
-  "description": "Custom context menu you were waiting for...",
+  "description": "Custom context menu for your stuff",
   "repository": {
     "type": "git",
     "url": "https://github.com/chipto/context-menu.git"
