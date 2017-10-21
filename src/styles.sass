@@ -2,8 +2,10 @@
     border-radius: 4px
     min-width: 130px
     font-size: 15px
+    // some defaults
+    background: #FFF
+    color: #4e4e4e
     &.dark
-        // Applies to root context menu and submenus
         , .submenu
             background: #1d1d1d
             color: #969696
@@ -13,7 +15,6 @@
         ul
             border-top: 1px solid #676767
     &.light
-        // Applies to root context menu and submenus
         , .submenu
             background: #ffffff;
             color: #4e4e4e
@@ -22,8 +23,7 @@
             background-color: #efefef
         ul
             border-top: 1px solid #eaeaea
-
-    ul    
+    ul
         list-style: none
         padding: 0
         margin: 0
@@ -48,7 +48,10 @@
             text-align: left
         span.label.sublabel
             font-size: 70%
-            opacity: 0.8
+            opacity: 0.8    
+            margin-left: 30px
+            margin-right: 10px
+            text-align: right
         i.submenu-expand
             display: inline-block
             font: normal normal normal 14px/1 sans-serif

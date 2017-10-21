@@ -8,7 +8,7 @@ export interface IMenuItem {
 
 export interface ITextMenuItem extends IMenuItem {
     sublabel?: string;
-    onClick: () => void | false;
+    onClick: () => void;
 }
 
 export interface ISubMenuItem extends IMenuItem {
@@ -56,39 +56,51 @@ class ContextMenu extends React.Component<IContextMenuProps, IContextMenuState> 
 
     /**
      * Once initialized either as `Component` or ContextMenu.init(...). Context menu can be shown using this method.
-     * If you are going to wire it up with 'context-menu' event, use ContextMenu.proxy instead.
-     * Example: ContextMenu.showMenu([[{label: 'Copy', onClick() {...}}, ...]], {pos: {x: 345, y:782}})
+     * If you are going to wire it up with 'context-menu' event, pass MouseEvent as second argument instead of position
+     * Example: ContextMenu.showMenu([[{label: 'Copy', onClick() {...}}, ...]], {x: 345, y:782})
      * @param data
-     * @param options
+     * @param posOrEvent
      */
-    public static showMenu(data: ContextMenuData | Promise<ContextMenuData>, options: { pos: IPosition }) {
-        return singleton.showMenu(data, options);
+    public static showMenu(data: ContextMenuData | Promise<ContextMenuData>, posOrEvent: IPosition | MouseEvent | React.MouseEvent<HTMLElement>) {
+        if (singleton === null) {
+            throw new Error('ContextMenu has not been initialized');
+        }
+        if (typeof posOrEvent !== 'object') {
+            throw new TypeError('ContextMenu#showMenu expects second parameter as MouseEvent or object as {x: number, y:number}');
+        }
+        const maybeEvent = posOrEvent as MouseEvent;
+        if (maybeEvent.clientX && maybeEvent.clientY) {
+            if (typeof maybeEvent.preventDefault === 'function') {
+                maybeEvent.preventDefault();
+            }
+            return singleton.showMenu(data, {
+                pos: {
+                    x: maybeEvent.clientX,
+                    y: maybeEvent.clientY,
+                },
+            });
+        }
+        const maybePos = posOrEvent as IPosition;
+        if (maybePos.x > 0 && maybePos.y > 0) {
+            return singleton.showMenu(data, { pos: maybePos });
+        }
     }
 
     /**
      * Easiest way to wire up ContextMenu with browser's 'context-menu' event to show custom context menu.
      * Example: window.addEventListener('context-menu', ContextMenu.proxy(this.getContextMenu))
-     * You only provide data, rest is taken care of (including positioning, clipping) automatically.
+     * WARNING: Every invocation of this function will return a new function reference, it's best to store
+     * the reference in a (persistent) local variable or as object's property before assigning it as event
+     * listener.
      * @param callbackOrData
      */
     public static proxy(callbackOrData: ContextMenuData | ((cb: MouseEvent | React.MouseEvent<HTMLElement>) => Promise<ContextMenuData>)) {
         return async function capture(ev: MouseEvent | React.MouseEvent<HTMLElement>, ...args) {
-            if (singleton === null) {
-                throw new Error('ContextMenu has not been initialized');
-            }
-
-            ev.preventDefault();
-            const pos = {
-                x: ev.clientX,
-                y: ev.clientY,
-            };
-
+            let data = callbackOrData as Promise<ContextMenuData> | ContextMenuData;
             if (typeof callbackOrData === 'function') {
-                callbackOrData = await callbackOrData(ev, ...args);
+                data = callbackOrData(ev, ...args);
             }
-            singleton.showMenu(callbackOrData, {
-                pos,
-            });
+            ContextMenu.showMenu(data, ev);
         };
     }
 
@@ -171,10 +183,8 @@ class ContextMenu extends React.Component<IContextMenuProps, IContextMenuState> 
                 if ((item as ITextMenuItem).onClick) {
                     const onClick = (e) => {
                         if (!item.disabled) {
-                            const shouldHide = (item as ITextMenuItem).onClick() !== false;
-                            if (shouldHide) {
-                                this.hideContextMenu();
-                            }
+                            (item as ITextMenuItem).onClick();
+                            this.hideContextMenu();
                         }
                     };
                     return (
@@ -248,7 +258,6 @@ class ContextMenu extends React.Component<IContextMenuProps, IContextMenuState> 
     }
 
     private showSubMenu = (ev: React.MouseEvent<HTMLButtonElement>) => {
-        console.log('show called', ev.currentTarget);
         const button = ev.currentTarget;
         const li = button.parentElement;
         const ulNode = li.parentElement as HTMLUListElement;
@@ -280,7 +289,6 @@ class ContextMenu extends React.Component<IContextMenuProps, IContextMenuState> 
     }
 
     private hideSubMenu = (ev: React.MouseEvent<HTMLButtonElement>) => {
-        console.log('hide called', ev.currentTarget);
         const button = ev.currentTarget;
         const liNode = button.parentElement;
         const ctxMenuParent = (liNode.parentElement as HTMLUListElement).parentElement as HTMLDivElement;
