@@ -22,7 +22,11 @@ ContextMenu.init(document.getElementById('widgets'));
 render(<App />, document.getElementById('root'));
 
 // Alternatively this also works (not recommended)
-// render(<div><App /><ContextMenu /></div>, document.getElementById('root'));
+render(
+    <div>
+        <App />
+        <ContextMenu />
+    </div>, document.getElementById('root'));
 ```
 ### Use
 ```javascript
@@ -77,7 +81,7 @@ Although ContextMenu is built using React, the API can be used in any other setu
 `ContextMenu.init(container, options)`
 
 Sets up ContextMenu for use in the specified container. `options` is an optional object as:
-```json
+```javascript
 {
     theme: 'myCustomTheme' // built-in 'dark' | 'light', default 'light'
 }
