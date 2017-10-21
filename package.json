@@ -1,6 +1,6 @@
 {
   "name": "context-menu",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Custom context menu for your stuff",
   "repository": {
     "type": "git",
@@ -23,7 +23,14 @@
     "tsc": "tsc",
     "sass": "node-sass --output-style pretty  src/styles.sass > lib/styles.css"
   },
-  "keywords": ["right", "click", "custom", "context", "menu", "react"],
+  "keywords": [
+    "right",
+    "click",
+    "custom",
+    "context",
+    "menu",
+    "react"
+  ],
   "author": "Neek Sandhu <neek.sandhu@chipto.io>",
   "license": "MIT"
 }
