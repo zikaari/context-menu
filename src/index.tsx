@@ -78,7 +78,7 @@ class ContextMenu extends React.Component<IContextMenuProps, IContextMenuState> 
                 y: maybeEvent.clientY,
             });
         }
-        return singleton.showMenu(data);
+        return singleton.showMenu(data, posOrEvent as IPosition);
     }
 
     /**
