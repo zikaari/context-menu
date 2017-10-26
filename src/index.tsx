@@ -173,7 +173,6 @@ class ContextMenu extends React.Component<IContextMenuProps, IContextMenuState> 
         const disposeHandle = () => {
             // stop further registerations/interactions immediately
             handleActive = false;
-            console.log('handle disposed');
             showCallbacks.forEach((cb) => {
                 this.emitter.off('ctx-menu-show', cb);
             });
