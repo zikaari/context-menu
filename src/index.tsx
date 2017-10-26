@@ -1,5 +1,7 @@
 import * as React from 'react';
 import { render } from 'react-dom';
+/** TO-DO: Update this to es6 on tiny-emitter release 3.0 */
+import Emitter = require('tiny-emitter');
 
 export interface IMenuItem {
     label: string;
@@ -56,38 +58,32 @@ class ContextMenu extends React.Component<IContextMenuProps, IContextMenuState> 
 
     /**
      * Once initialized either as `Component` or ContextMenu.init(...). Context menu can be shown using this method.
-     * If you are going to wire it up with 'context-menu' event, pass MouseEvent as second argument instead of position
      * Example: ContextMenu.showMenu([[{label: 'Copy', onClick() {...}}, ...]], {x: 345, y:782})
+     * Returns a handle for you to attach listeners, update items or close the menu programatically
      * @param data
      * @param posOrEvent
      */
-    public static showMenu(data: ContextMenuData | Promise<ContextMenuData>, posOrEvent: IPosition | MouseEvent | React.MouseEvent<HTMLElement>) {
+    public static showMenu(data: ContextMenuData | Promise<ContextMenuData>, posOrEvent?: IPosition | MouseEvent | React.MouseEvent<HTMLElement>) {
         if (singleton === null) {
             throw new Error('ContextMenu has not been initialized');
         }
-        if (typeof posOrEvent !== 'object') {
-            throw new TypeError('ContextMenu#showMenu expects second parameter as MouseEvent or object as {x: number, y:number}');
-        }
         const maybeEvent = posOrEvent as MouseEvent;
-        if (maybeEvent.clientX && maybeEvent.clientY) {
+        if (maybeEvent && maybeEvent.clientX && maybeEvent.clientY) {
+            console.warn('Deprecation warning: MouseEvents are now auto-captured, passing them to ContextMenu#showMenu as second param is now deprecated and will throw error in next release');
             if (typeof maybeEvent.preventDefault === 'function') {
                 maybeEvent.preventDefault();
             }
             return singleton.showMenu(data, {
-                pos: {
-                    x: maybeEvent.clientX,
-                    y: maybeEvent.clientY,
-                },
+                x: maybeEvent.clientX,
+                y: maybeEvent.clientY,
             });
         }
-        const maybePos = posOrEvent as IPosition;
-        if (maybePos.x > 0 && maybePos.y > 0) {
-            return singleton.showMenu(data, { pos: maybePos });
-        }
+        return singleton.showMenu(data);
     }
 
     /**
-     * Easiest way to wire up ContextMenu with browser's 'context-menu' event to show custom context menu.
+     * ! Deprecated !
+     * (Was the) Easiest way to wire up ContextMenu with browser's 'context-menu' event to show custom context menu.
      * Example: window.addEventListener('context-menu', ContextMenu.proxy(this.getContextMenu))
      * WARNING: Every invocation of this function will return a new function reference, it's best to store
      * the reference in a (persistent) local variable or as object's property before assigning it as event
@@ -95,6 +91,7 @@ class ContextMenu extends React.Component<IContextMenuProps, IContextMenuState> 
      * @param callbackOrData
      */
     public static proxy(callbackOrData: ContextMenuData | ((cb: MouseEvent | React.MouseEvent<HTMLElement>) => Promise<ContextMenuData>)) {
+        console.warn('Deprecation warning: ContextMenu#proxy is now deprecated and will be removed in next release');
         return async function capture(ev: MouseEvent | React.MouseEvent<HTMLElement>, ...args) {
             let data = callbackOrData as Promise<ContextMenuData> | ContextMenuData;
             if (typeof callbackOrData === 'function') {
@@ -104,8 +101,9 @@ class ContextMenu extends React.Component<IContextMenuProps, IContextMenuState> 
         };
     }
 
+    private lastCapturedCtxMenuEvent: MouseEvent;
     private isOpen: boolean;
-    // private emitter: EventEmitter;
+    private emitter: Emitter;
     private rootContextMenu: HTMLDivElement;
     private pos: IPosition;
     private visible: boolean;
@@ -113,6 +111,7 @@ class ContextMenu extends React.Component<IContextMenuProps, IContextMenuState> 
     constructor(props) {
         super(props);
         ensureSingeleton();
+        this.emitter = new Emitter();
         this.isOpen = false;
         // this.emitter = new EventEmitter();
         this.pos = {
@@ -131,16 +130,19 @@ class ContextMenu extends React.Component<IContextMenuProps, IContextMenuState> 
 
     public componentDidMount() {
         singleton = this;
+        window.addEventListener('contextmenu', this.captureCtxMenuEvent, true);
     }
 
     public componentWillUnmount() {
         // this.emitter.removeAllListeners();
         singleton = null;
+        window.removeEventListener('contextmenu', this.captureCtxMenuEvent, true);
     }
 
     public componentDidUpdate() {
         if (this.visible) {
             this.adjustContextMenuClippingAndShow();
+            this.emitter.emit('ctx-menu-show');
             const hideCb = () => {
                 if (!this.isLastMousedownInternal) {
                     this.hideContextMenu();
@@ -155,22 +157,73 @@ class ContextMenu extends React.Component<IContextMenuProps, IContextMenuState> 
         }
     }
 
-    private async showMenu(data: ContextMenuData | Promise<ContextMenuData>, options) {
-        if (data instanceof Promise) {
-            data = await data;
-        }
-        this.validateData(data);
-        this.visible = true;
-        this.pos = options.pos;
-        this.setState({
-            data,
-        });
+    private captureCtxMenuEvent = (ev: MouseEvent) => {
+        this.lastCapturedCtxMenuEvent = ev;
     }
 
-    // public onClose(callback) {
-    //     const e = this.emitter.on('close-menu', callback);
-    //     return () => e.removeListener('close-menu', callback);
-    // }
+    private showMenu(data: ContextMenuData | Promise<ContextMenuData>, pos?: IPosition) {
+        this.hideContextMenu();
+        let handleActive = true;
+        const showCallbacks = [];
+        const closeCallbacks = [];
+        if (this.lastCapturedCtxMenuEvent && !this.lastCapturedCtxMenuEvent.defaultPrevented) {
+            this.lastCapturedCtxMenuEvent.preventDefault();
+        }
+
+        const disposeHandle = () => {
+            // stop further registerations/interactions immediately
+            handleActive = false;
+            console.log('handle disposed');
+            showCallbacks.forEach((cb) => {
+                this.emitter.off('ctx-menu-show', cb);
+            });
+            [...closeCallbacks, disposeHandle].forEach((cb) => {
+                this.emitter.off('ctx-menu-close', cb);
+            });
+        };
+        this.emitter.on('ctx-menu-close', disposeHandle);
+
+        Promise.resolve(data)
+            .then((ctxMenuData) => {
+                this.validateData(ctxMenuData);
+                this.visible = true;
+                this.pos = (pos && pos.x > -1 && pos.y > -1) ?
+                    pos
+                    : this.lastCapturedCtxMenuEvent ?
+                        { x: this.lastCapturedCtxMenuEvent.clientX, y: this.lastCapturedCtxMenuEvent.clientY }
+                        : { x: 0, y: 0 };
+                this.setState({
+                    data: ctxMenuData,
+                });
+            });
+
+        return {
+            onShow: (cb) => {
+                if (handleActive) {
+                    showCallbacks.push(cb);
+                    this.emitter.on('ctx-menu-show', cb);
+                }
+            },
+            onClose: (cb) => {
+                if (handleActive) {
+                    closeCallbacks.push(cb);
+                    this.emitter.on('ctx-menu-close', cb);
+                }
+            },
+            update: (newData: ContextMenuData) => {
+                if (handleActive) {
+                    this.validateData(newData);
+                    this.setState({ data: newData });
+                }
+            },
+            close: () => {
+                if (handleActive) {
+                    this.hideContextMenu();
+                }
+            },
+            isActive: () => handleActive,
+        };
+    }
 
     private renderMenu(data: ContextMenuData, submenu = false) {
         const menu = [];
@@ -227,7 +280,7 @@ class ContextMenu extends React.Component<IContextMenuProps, IContextMenuState> 
                 onMouseDown={() => this.isLastMousedownInternal = true}
                 ref={(r) => this.rootContextMenu = r}
                 className={`context-menu ${this.props.theme || 'light'}`}
-                style={{ position: 'absolute', display: 'none' }}
+                style={{ position: 'fixed', display: 'none' }}
             >
                 {menu}
             </div>;
@@ -252,9 +305,13 @@ class ContextMenu extends React.Component<IContextMenuProps, IContextMenuState> 
     }
 
     private hideContextMenu() {
+        if (!this.visible) {
+            return;
+        }
         this.visible = false;
         this.rootContextMenu.style.display = 'none';
         this.hideSubMenus(this.rootContextMenu);
+        this.emitter.emit('ctx-menu-close');
     }
 
     private showSubMenu = (ev: React.MouseEvent<HTMLButtonElement>) => {
