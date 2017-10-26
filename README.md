@@ -61,7 +61,15 @@ class App extends Component {
             ]
         ];
         
-        ContextMenu.showMenu(data, event);
+        const handle = ContextMenu.showMenu(data);
+
+        // Optional operations
+        handle.onShow(() => {/** impl */});
+        handle.onClose(() => {/** impl */});
+        setTimeout(() => {
+            handle.update(/** new data */);
+        }, 1200);
+        handle.close();
     }
 }
 
@@ -105,11 +113,13 @@ Use this `sass` template to define theme:
             border-top: 1px solid #676767
 ```
 
-`ContextMenu.showMenu(data, positionOrEvent)`
+`ContextMenu.showMenu(data, [position])`
+> Deprecation: MouseEvents are now auto-captured thus passing them as second param is deprecated
 
 Show context menu, usage as in example above.
 
 `ContextMenu.proxy(data)`
+> Deprecated: ContextMenu#showMenu has been been made simple enough and MouseEvents are auto-captured.
 
 Returns an event listener that can be bound to `context-menu` event. Be cautious when using this, as every invocation returns a new function reference. Using this directly in cases like React as `onContextMenu={ContextMenu.proxy(data)}` can confuse React and every render it'll remove and re-attach the listener.
 
