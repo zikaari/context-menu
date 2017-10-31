@@ -113,7 +113,7 @@ Use this `sass` template to define theme:
             border-top: 1px solid #676767
 ```
 
-(If you SASS is not part of your workflow, you can use this to get through the day: https://www.sassmeister.com/)
+(If SASS is not part of your workflow, you can use https://www.sassmeister.com/ to get through the day)
 
 ## `ContextMenu.showMenu(data, [position])`
 > Deprecation: MouseEvents are now auto-captured thus passing them as second param is deprecated
