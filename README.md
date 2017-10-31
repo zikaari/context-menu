@@ -86,7 +86,7 @@ However, it's great if you are using another framework or no framework at all, a
 ## API
 Although ContextMenu is built using React, the API can be used in any other setup, including vanilla JS.
 
-`ContextMenu.init(container, options)`
+## `ContextMenu.init(container, options)`
 
 Sets up ContextMenu for use in the specified container. `options` is an optional object as:
 ```javascript
@@ -113,12 +113,12 @@ Use this `sass` template to define theme:
             border-top: 1px solid #676767
 ```
 
-`ContextMenu.showMenu(data, [position])`
+## `ContextMenu.showMenu(data, [position])`
 > Deprecation: MouseEvents are now auto-captured thus passing them as second param is deprecated
 
 Show context menu, usage as in example above.
 
-`ContextMenu.proxy(data)`
+## `ContextMenu.proxy(data)`
 > Deprecated: ContextMenu#showMenu has been been made simple enough and MouseEvents are auto-captured.
 
 Returns an event listener that can be bound to `context-menu` event. Be cautious when using this, as every invocation returns a new function reference. Using this directly in cases like React as `onContextMenu={ContextMenu.proxy(data)}` can confuse React and every render it'll remove and re-attach the listener.
