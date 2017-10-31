@@ -124,3 +124,13 @@ Show context menu, usage as in example above.
 Returns an event listener that can be bound to `context-menu` event. Be cautious when using this, as every invocation returns a new function reference. Using this directly in cases like React as `onContextMenu={ContextMenu.proxy(data)}` can confuse React and every render it'll remove and re-attach the listener.
 
 It's best to call it once and store the returned function in a persistent and consistent variable or object property.
+
+## Important Note
+
+`ContextMenu` does not come with any default value of `z-index`. If you have other absolutely/fixed positioned items in the DOM leading to conflicting overlaps, you can adjust the `z-index` that `ContextMenu` shall use for itself, by including this somewhere in your CSS.
+
+```css
+.context-menu {
+    z-index: asYouSeeFit;
+}
+```
