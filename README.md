@@ -103,7 +103,7 @@ Use this `sass` template to define theme:
     font-size: 15px
     &.myCustomTheme
         // Applies to self and .submenu
-        , .submenu
+        &, .submenu
             background: #1d1d1d
             color: #969696
             box-shadow: 2px 3px 8px black
@@ -112,6 +112,8 @@ Use this `sass` template to define theme:
         ul
             border-top: 1px solid #676767
 ```
+
+(If you SASS is not part of your workflow, you can use this to get through the day: https://www.sassmeister.com/)
 
 ## `ContextMenu.showMenu(data, [position])`
 > Deprecation: MouseEvents are now auto-captured thus passing them as second param is deprecated
