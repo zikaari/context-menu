@@ -39,14 +39,21 @@ declare class ContextMenu extends React.Component<IContextMenuProps, IContextMen
     static init(container: HTMLElement, options?: IContextMenuProps): void;
     /**
      * Once initialized either as `Component` or ContextMenu.init(...). Context menu can be shown using this method.
-     * If you are going to wire it up with 'context-menu' event, pass MouseEvent as second argument instead of position
      * Example: ContextMenu.showMenu([[{label: 'Copy', onClick() {...}}, ...]], {x: 345, y:782})
+     * Returns a handle for you to attach listeners, update items or close the menu programatically
      * @param data
      * @param posOrEvent
      */
-    static showMenu(data: ContextMenuData | Promise<ContextMenuData>, posOrEvent: IPosition | MouseEvent | React.MouseEvent<HTMLElement>): Promise<void>;
+    static showMenu(data: ContextMenuData | Promise<ContextMenuData>, posOrEvent?: IPosition | MouseEvent | React.MouseEvent<HTMLElement>): {
+        onShow: (cb: any) => void;
+        onClose: (cb: any) => void;
+        update: (newData: (ITextMenuItem | ISubMenuItem)[][]) => void;
+        close: () => void;
+        isActive: () => boolean;
+    };
     /**
-     * Easiest way to wire up ContextMenu with browser's 'context-menu' event to show custom context menu.
+     * ! Deprecated !
+     * (Was the) Easiest way to wire up ContextMenu with browser's 'context-menu' event to show custom context menu.
      * Example: window.addEventListener('context-menu', ContextMenu.proxy(this.getContextMenu))
      * WARNING: Every invocation of this function will return a new function reference, it's best to store
      * the reference in a (persistent) local variable or as object's property before assigning it as event
@@ -54,7 +61,9 @@ declare class ContextMenu extends React.Component<IContextMenuProps, IContextMen
      * @param callbackOrData
      */
     static proxy(callbackOrData: ContextMenuData | ((cb: MouseEvent | React.MouseEvent<HTMLElement>) => Promise<ContextMenuData>)): (ev: MouseEvent | React.MouseEvent<HTMLElement>, ...args: any[]) => Promise<void>;
+    private lastCapturedCtxMenuEvent;
     private isOpen;
+    private emitter;
     private rootContextMenu;
     private pos;
     private visible;
@@ -64,7 +73,8 @@ declare class ContextMenu extends React.Component<IContextMenuProps, IContextMen
     componentDidMount(): void;
     componentWillUnmount(): void;
     componentDidUpdate(): void;
-    private showMenu(data, options);
+    private captureCtxMenuEvent;
+    private showMenu(data, pos?);
     private renderMenu(data, submenu?);
     private adjustContextMenuClippingAndShow();
     private hideContextMenu();
