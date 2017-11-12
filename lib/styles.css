@@ -2,30 +2,39 @@
 .context-menu {
   border-radius: 4px;
   min-width: 130px;
-  font-size: 15px; }
+  font-size: 15px;
+  z-index: 10;
+  background: #FFF;
+  color: #4e4e4e; }
   .context-menu.dark, .context-menu.dark .submenu {
     background: #1d1d1d;
     color: #969696;
     box-shadow: 2px 3px 8px black; }
-    .context-menu.dark button:hover, .context-menu.dark .submenu button:hover {
-      background-color: #2f2f2f; }
+  .context-menu.dark li:not(.disabled) button:hover {
+    background-color: #2f2f2f; }
+  .context-menu.dark ul {
+    border-top: 1px solid #676767; }
   .context-menu.light, .context-menu.light .submenu {
     background: #ffffff;
     color: #4e4e4e;
     box-shadow: 2px 3px 6px #545454; }
-    .context-menu.light button:hover, .context-menu.light .submenu button:hover {
-      background-color: #efefef; }
+  .context-menu.light li:not(.disabled) button:hover {
+    background-color: #efefef; }
+  .context-menu.light ul {
+    border-top: 1px solid #eaeaea; }
   .context-menu ul {
     list-style: none;
     padding: 0;
     margin: 0;
-    padding: 4px 0;
-    border-top: 1px solid #eaeaea; }
+    padding: 4px 0; }
     .context-menu ul:first-child {
       border-top: 0; }
+  .context-menu li.disabled {
+    opacity: .5; }
   .context-menu button {
     background: none;
     border: none;
+    border-radius: 0;
     padding: 3px 2px 3px 7px;
     width: 100%;
     color: inherit;
@@ -38,7 +47,10 @@
       text-align: left; }
     .context-menu button span.label.sublabel {
       font-size: 70%;
-      opacity: 0.8; }
+      opacity: 0.8;
+      margin-left: 30px;
+      margin-right: 10px;
+      text-align: right; }
     .context-menu button i.submenu-expand {
       display: inline-block;
       font: normal normal normal 14px/1 sans-serif;

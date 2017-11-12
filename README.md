@@ -129,7 +129,7 @@ It's best to call it once and store the returned function in a persistent and co
 
 ## Important Note
 
-`ContextMenu` does not come with any default value of `z-index`. If you have other absolutely/fixed positioned items in the DOM leading to conflicting overlaps, you can adjust the `z-index` that `ContextMenu` shall use for itself, by including this somewhere in your CSS.
+`ContextMenu` comes with `z-index` set to `10` by default. If you have other absolutely/fixed positioned items in the DOM leading to conflicting overlaps, you can adjust the `z-index` that `ContextMenu` shall use for itself, by including this somewhere in your CSS.
 
 ```css
 .context-menu {
