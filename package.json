@@ -9,9 +9,11 @@
   "main": "lib/",
   "typings": "lib/",
   "dependencies": {
-    "react": "^16.0.0",
-    "react-dom": "^16.0.0",
     "tiny-emitter": "^2.0.2"
+  },
+  "peerDependencies": {
+    "react": "^16.0.0",
+    "react-dom": "^16.0.0"
   },
   "devDependencies": {
     "@types/react": "^16.0.10",
