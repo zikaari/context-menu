@@ -235,7 +235,7 @@ class ContextMenu extends React.Component<IContextMenuProps, IContextMenuState> 
                 if ((item as ITextMenuItem).onClick) {
                     const onClick = (e) => {
                         if (!item.disabled) {
-                            (item as ITextMenuItem).onClick();
+                            (item as ITextMenuItem).onClick(item);
                             this.hideContextMenu();
                         }
                     };
